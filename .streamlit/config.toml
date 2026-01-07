@@ -1,0 +1,55 @@
+[theme]
+primaryColor = "#006341"
+backgroundColor = "#f8faf9"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#1a1a2e"
+
+[server]
+headless = true
+```
+
+4. Klikk **"Commit changes"** (grønn knapp)
+
+---
+
+## Del 3: Deploy til Streamlit Cloud
+
+### Steg 7: Koble GitHub til Streamlit
+1. Gå til **[share.streamlit.io](https://share.streamlit.io)**
+2. Klikk **"New app"** (øverst til høyre)
+3. Du ser nå et skjema:
+
+| Felt | Hva du skal velge/skrive |
+|------|--------------------------|
+| **Repository** | Velg `baereevne-app` fra listen |
+| **Branch** | `main` (står sannsynligvis allerede) |
+| **Main file path** | `app.py` |
+
+4. Klikk **"Deploy!"**
+
+### Steg 8: Vent på at appen bygges
+- Streamlit installerer nå alle nødvendige pakker
+- Dette tar **2-5 minutter** første gang
+- Du ser en logg som ruller - dette er normalt
+- Når den er ferdig, åpnes appen automatisk! 🎉
+
+---
+
+## Del 4: Bruk appen din!
+
+### Din app er nå live på internett
+- Du får en URL som ser slik ut: `https://dittbrukernavn-baereevne-app-app-xyz123.streamlit.app`
+- **Bokmerke denne!** Du kan dele den med kollegaer
+- Appen kjører gratis så lenge du har under 1000 brukere/måned
+
+---
+
+## 🔧 Hvis noe går galt
+
+### "ModuleNotFoundError"
+→ Sjekk at `requirements.txt` er lastet opp og inneholder:
+```
+streamlit>=1.28.0
+numpy>=1.24.0
+plotly>=5.18.0
+pandas>=2.0.0
