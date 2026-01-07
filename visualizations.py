@@ -1,6 +1,6 @@
 """
 Visualiseringer for bæreevneberegning
-Profesjonelle Plotly-figurer
+Profesjonelle Plotly-figurer med moment-visning
 """
 
 import numpy as np
@@ -12,7 +12,7 @@ def lag_fundament_figur(fundament: FundamentGeometri,
                         terreng: TerrengForhold,
                         resultat: Resultat,
                         belastning: Belastning) -> go.Figure:
-    """Lager tverrsnittsfigur av fundamentet"""
+    """Lager tverrsnittsfigur av fundamentet med alle laster inkludert moment"""
     B = fundament.bredde
     T = fundament.tykkelse
     D = terreng.fundamentdybde
@@ -65,7 +65,7 @@ def lag_fundament_figur(fundament: FundamentGeometri,
             line=dict(color="#404040", width=2)
         )
     
-    # Effektiv bredde
+    # Effektiv bredde markering
     fig.add_shape(
         type="rect",
         x0=-B/2 + abs(e_B), y0=-D-0.05, x1=B/2 - abs(e_B), y1=-D,
@@ -73,10 +73,12 @@ def lag_fundament_figur(fundament: FundamentGeometri,
         line=dict(color="#006341", width=2)
     )
     
-    # Vertikallast
+    # === LASTER ===
+    
+    # Vertikallast (rød pil ned)
     fig.add_annotation(
-        x=e_B, y=0.1,
-        ax=e_B, ay=0.5,
+        x=e_B, y=0.15,
+        ax=e_B, ay=0.55,
         xref="x", yref="y",
         axref="x", ayref="y",
         showarrow=True,
@@ -86,18 +88,18 @@ def lag_fundament_figur(fundament: FundamentGeometri,
         arrowcolor="#c62828"
     )
     fig.add_annotation(
-        x=e_B, y=0.55,
-        text=f"V = {belastning.vertikal:.0f}",
+        x=e_B, y=0.62,
+        text=f"V = {belastning.vertikal:.0f} kN",
         showarrow=False,
-        font=dict(size=11, color="#c62828", family="Arial")
+        font=dict(size=11, color="#c62828")
     )
     
-    # Horisontallast
+    # Horisontallast (blå pil)
     if abs(belastning.horisontal_B) > 0.1:
         H_dir = 1 if belastning.horisontal_B > 0 else -1
         fig.add_annotation(
-            x=0, y=-D/2,
-            ax=-0.3*H_dir, ay=-D/2,
+            x=H_dir * 0.35, y=0.15,
+            ax=0, ay=0.15,
             xref="x", yref="y",
             axref="x", ayref="y",
             showarrow=True,
@@ -106,27 +108,107 @@ def lag_fundament_figur(fundament: FundamentGeometri,
             arrowwidth=3,
             arrowcolor="#1565c0"
         )
+        fig.add_annotation(
+            x=H_dir * 0.5, y=0.15,
+            text=f"H = {abs(belastning.horisontal_B):.0f} kN",
+            showarrow=False,
+            font=dict(size=10, color="#1565c0"),
+            xanchor="left" if H_dir > 0 else "right"
+        )
     
-    # Dimensjoner
+    # === MOMENT (lilla buet pil) ===
+    if abs(belastning.moment_B) > 0.1:
+        # Tegn en buet moment-indikator
+        M_dir = 1 if belastning.moment_B > 0 else -1
+        
+        # Lag buet pil med punkter
+        theta = np.linspace(0, np.pi * 0.7, 20)
+        r = 0.25
+        x_arc = r * np.cos(theta) * M_dir
+        y_arc = r * np.sin(theta) + 0.15
+        
+        # Tegn buen
+        fig.add_trace(go.Scatter(
+            x=x_arc,
+            y=y_arc,
+            mode='lines',
+            line=dict(color='#7b1fa2', width=3),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Pilspiss på enden av buen
+        end_x = x_arc[-1]
+        end_y = y_arc[-1]
+        
+        # Legg til pilspiss som annotation
+        fig.add_annotation(
+            x=end_x, y=end_y,
+            ax=x_arc[-3], ay=y_arc[-3],
+            xref="x", yref="y",
+            axref="x", ayref="y",
+            showarrow=True,
+            arrowhead=2,
+            arrowsize=1.2,
+            arrowwidth=3,
+            arrowcolor="#7b1fa2"
+        )
+        
+        # Moment-tekst
+        fig.add_annotation(
+            x=0, y=0.5,
+            text=f"M = {abs(belastning.moment_B):.0f} kNm",
+            showarrow=False,
+            font=dict(size=10, color="#7b1fa2")
+        )
+    
+    # === DIMENSJONER ===
+    
+    # Bredde B
     fig.add_shape(type="line", x0=-B/2, y0=-D-0.3, x1=B/2, y1=-D-0.3,
                   line=dict(color="#666", width=1, dash="dot"))
-    fig.add_annotation(x=0, y=-D-0.35, text=f"B = {B:.2f} m",
+    fig.add_shape(type="line", x0=-B/2, y0=-D-0.25, x1=-B/2, y1=-D-0.35,
+                  line=dict(color="#666", width=1))
+    fig.add_shape(type="line", x0=B/2, y0=-D-0.25, x1=B/2, y1=-D-0.35,
+                  line=dict(color="#666", width=1))
+    fig.add_annotation(x=0, y=-D-0.38, text=f"B = {B:.2f} m",
                       showarrow=False, font=dict(size=10, color="#666"))
     
+    # Effektiv bredde Bo
     fig.add_annotation(x=0, y=-D-0.12, text=f"Bo = {Bo:.2f} m",
-                      showarrow=False, font=dict(size=10, color="#006341"))
+                      showarrow=False, font=dict(size=10, color="#006341", weight="bold"))
     
+    # Fundamentdybde D
     if D > 0:
         fig.add_shape(type="line", x0=B/2+0.15, y0=0, x1=B/2+0.15, y1=-D,
                       line=dict(color="#666", width=1, dash="dot"))
-        fig.add_annotation(x=B/2+0.25, y=-D/2, text=f"D = {D:.2f} m",
+        fig.add_shape(type="line", x0=B/2+0.1, y0=0, x1=B/2+0.2, y1=0,
+                      line=dict(color="#666", width=1))
+        fig.add_shape(type="line", x0=B/2+0.1, y0=-D, x1=B/2+0.2, y1=-D,
+                      line=dict(color="#666", width=1))
+        fig.add_annotation(x=B/2+0.28, y=-D/2, text=f"D = {D:.2f} m",
                           showarrow=False, font=dict(size=10, color="#666"),
                           textangle=-90)
     
-    # Spenningspiler
+    # Tykkelse T
+    fig.add_shape(type="line", x0=-B/2-0.15, y0=-D, x1=-B/2-0.15, y1=-D+T,
+                  line=dict(color="#666", width=1, dash="dot"))
+    fig.add_annotation(x=-B/2-0.25, y=-D+T/2, text=f"T = {T:.2f} m",
+                      showarrow=False, font=dict(size=9, color="#666"),
+                      textangle=-90)
+    
+    # Eksentrisitet e (hvis > 0)
+    if abs(e_B) > 0.01:
+        fig.add_shape(type="line", x0=0, y0=-D+T+0.05, x1=e_B, y1=-D+T+0.05,
+                      line=dict(color="#ff6b35", width=2, dash="dash"))
+        fig.add_annotation(x=e_B/2, y=-D+T+0.12, text=f"e = {e_B:.3f} m",
+                          showarrow=False, font=dict(size=9, color="#ff6b35"))
+    
+    # === SPENNINGSFORDELING ===
     q = resultat.grunntrykk
-    q_scale = 0.2 * T
+    q_scale = 0.25 * T
     n_piler = 7
+    
     for x in np.linspace(-Bo/2 + abs(e_B), Bo/2 - abs(e_B), n_piler):
         fig.add_annotation(
             x=x, y=-D-0.02,
@@ -140,11 +222,12 @@ def lag_fundament_figur(fundament: FundamentGeometri,
             arrowcolor="#ff6b35"
         )
     
-    fig.add_annotation(x=0, y=-D-q_scale-0.1,
+    fig.add_annotation(x=0, y=-D-q_scale-0.12,
                       text=f"q = {q:.1f} kN/m²",
                       showarrow=False,
-                      font=dict(size=11, color="#ff6b35"))
+                      font=dict(size=11, color="#ff6b35", weight="bold"))
     
+    # Layout
     fig.update_layout(
         showlegend=False,
         plot_bgcolor="white",
@@ -156,9 +239,9 @@ def lag_fundament_figur(fundament: FundamentGeometri,
         ),
         yaxis=dict(
             showgrid=False, zeroline=False, showticklabels=False,
-            range=[-D-T-0.6, 0.8]
+            range=[-D-T-0.7, 0.9]
         ),
-        height=400
+        height=450
     )
     
     return fig
@@ -202,41 +285,6 @@ def lag_utnyttelse_gauge(utnyttelse: float) -> go.Figure:
         font={'color': "#333"},
         height=280,
         margin=dict(l=30, r=30, t=40, b=10)
-    )
-    
-    return fig
-
-
-def lag_sammenligning_bar(resultat: Resultat) -> go.Figure:
-    """Stolpediagram med grunntrykk vs bæreevne"""
-    fig = go.Figure()
-    
-    fig.add_trace(go.Bar(
-        x=['Bæreevne (s)'],
-        y=[resultat.baereevne],
-        marker_color='#006341',
-        text=[f'{resultat.baereevne:.1f}'],
-        textposition='outside',
-        name='Bæreevne'
-    ))
-    
-    fig.add_trace(go.Bar(
-        x=['Grunntrykk (q)'],
-        y=[resultat.grunntrykk],
-        marker_color='#ff6b35',
-        text=[f'{resultat.grunntrykk:.1f}'],
-        textposition='outside',
-        name='Grunntrykk'
-    ))
-    
-    fig.update_layout(
-        showlegend=False,
-        plot_bgcolor="white",
-        paper_bgcolor="rgba(0,0,0,0)",
-        yaxis_title="kN/m²",
-        yaxis=dict(gridcolor="#eee"),
-        height=300,
-        margin=dict(l=60, r=20, t=30, b=40)
     )
     
     return fig
