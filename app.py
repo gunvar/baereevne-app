@@ -20,13 +20,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Styling
+# CSS Styling - FIKSET: Sort tekst på lys bakgrunn
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap');
     
     .stApp {
         background: linear-gradient(135deg, #f8faf9 0%, #f0f4f2 100%);
+    }
+    
+    /* Sørg for sort tekst overalt */
+    .stApp, .stApp p, .stApp span, .stApp div, .stApp label {
+        color: #1a1a2e !important;
     }
     
     .main-header {
@@ -37,13 +42,13 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0, 99, 65, 0.15);
     }
     .main-header h1 {
-        color: white;
+        color: white !important;
         font-size: 1.8rem;
         font-weight: 700;
         margin: 0;
     }
     .main-header p {
-        color: rgba(255,255,255,0.85);
+        color: rgba(255,255,255,0.9) !important;
         font-size: 1rem;
         margin: 0.3rem 0 0 0;
     }
@@ -62,7 +67,7 @@ st.markdown("""
     
     .result-label {
         font-size: 0.8rem;
-        color: #666;
+        color: #666 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 600;
@@ -71,11 +76,11 @@ st.markdown("""
     .result-value {
         font-size: 1.8rem;
         font-weight: 600;
-        color: #1a1a2e;
+        color: #1a1a2e !important;
     }
     .result-unit {
         font-size: 0.9rem;
-        color: #666;
+        color: #666 !important;
         margin-left: 4px;
     }
     
@@ -97,8 +102,37 @@ st.markdown("""
         padding: 0.8rem 1rem;
         margin-bottom: 1rem;
         border-left: 3px solid #006341;
+        color: #1a1a2e !important;
     }
-    .project-info strong { color: #006341; }
+    .project-info strong { color: #006341 !important; }
+    
+    /* Formel-boks styling */
+    .formula-box {
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-left: 4px solid #006341;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin: 0.5rem 0;
+        font-family: 'Courier New', monospace;
+        font-size: 0.95rem;
+        color: #1a1a2e !important;
+    }
+    
+    .formula-title {
+        font-weight: 600;
+        color: #006341 !important;
+        margin-bottom: 0.5rem;
+        font-family: 'Source Sans Pro', sans-serif;
+    }
+    
+    /* Sidebar tekst */
+    .css-1d391kg, [data-testid="stSidebar"] {
+        background: white;
+    }
+    [data-testid="stSidebar"] * {
+        color: #1a1a2e !important;
+    }
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -323,15 +357,12 @@ def main():
         with res_col3:
             if resultat.utnyttelsesgrad <= 0.7:
                 status_class = "success"
-                status_text = "OK"
                 bar_color = "#2e7d32"
             elif resultat.utnyttelsesgrad <= 1.0:
                 status_class = "warning"
-                status_text = "OK (marginal)"
                 bar_color = "#f57c00"
             else:
                 status_class = "danger"
-                status_text = "IKKE OK"
                 bar_color = "#c62828"
             
             utn_pct = resultat.utnyttelsesgrad * 100
@@ -404,6 +435,71 @@ def main():
             if resultat.ruhet > 0.9:
                 st.warning("⚠️ r > 0.9: Nær glidning")
         
+        # === FORMLER ===
+        st.markdown("---")
+        st.markdown("### 📐 Anvendte formler")
+        
+        if analysetype == 'effektiv':
+            st.markdown("""
+            <div class="formula-box">
+                <div class="formula-title">Bæreevneformel (Effektivspenningsanalyse)</div>
+                <strong>s = f<sub>β</sub> · s<sub>q</sub> · N<sub>q</sub> · (γ'·D + q₀ + a) + f<sub>β</sub> · s<sub>γ</sub> · ½ · N<sub>γ</sub> · γ' · B₀ - a</strong>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+            <div class="formula-box">
+                <div class="formula-title">Bæreevnefaktor N<sub>q</sub></div>
+                <strong>N<sub>q</sub> = ½ · (K<sub>p,ref</sub> + 1 + (K<sub>p,ref</sub> - 1) · cos(2θ<sub>m</sub>)) · e<sup>(π - 2θ<sub>m</sub>) · tan(φ'<sub>d</sub>)</sup></strong><br>
+                hvor K<sub>p,ref</sub> = tan²(45° + φ'<sub>d</sub>/2)
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+            <div class="formula-box">
+                <div class="formula-title">Bæreevnefaktor N<sub>γ</sub></div>
+                Interpolert fra tabell basert på tan(φ'<sub>d</sub>) og ruhet r (Brinch Hansen, 1970)
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="formula-box">
+                <div class="formula-title">Bæreevneformel (Totalspenningsanalyse)</div>
+                <strong>s = f<sub>β</sub> · s<sub>c</sub> · N<sub>c</sub> · s<sub>u</sub>/γ<sub>M</sub> + (γ·D + q₀) · cos²(β)</strong>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+            <div class="formula-box">
+                <div class="formula-title">Bæreevnefaktor N<sub>c</sub></div>
+                <strong>N<sub>c</sub> = π + 2 + √(1 - r²) - arcsin(r)</strong>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="formula-box">
+            <div class="formula-title">Effektiv bredde og eksentrisitet</div>
+            <strong>e<sub>B</sub> = M / V</strong><br>
+            <strong>B₀ = B - 2·|e<sub>B</sub>|</strong>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="formula-box">
+            <div class="formula-title">Grunntrykk</div>
+            <strong>q = V<sub>total</sub> / A<sub>eff</sub></strong><br>
+            hvor A<sub>eff</sub> = B₀ (stripefundament) eller A<sub>eff</sub> = B₀ · L₀ (rektangulært)
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="formula-box">
+            <div class="formula-title">Skråningsreduksjon f<sub>β</sub></div>
+            <strong>Effektiv: f<sub>β</sub> = (1 - 0.55·tan(β<sub>s</sub>))⁵</strong><br>
+            <strong>Udrenert: f<sub>β</sub> = 1 - 4·β<sub>s</sub>/(π + 2)</strong>
+        </div>
+        """, unsafe_allow_html=True)
+        
         # Eksport
         if export_btn:
             html = generer_rapport_html(prosjekt_info, jord, fundament, belastning, terreng, resultat)
@@ -421,7 +517,7 @@ def main():
     # Footer
     st.markdown("---")
     st.markdown("""
-    <div style="text-align: center; color: #888; font-size: 0.85rem; padding: 1rem 0;">
+    <div style="text-align: center; color: #666; font-size: 0.85rem; padding: 1rem 0;">
         <strong>Norconsult Bæreevneberegning</strong> v1.0<br>
         NS-EN 1997-1 (Eurokode 7) • Brinch Hansen's metode
     </div>
